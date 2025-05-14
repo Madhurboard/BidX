@@ -83,7 +83,7 @@ export const mockAuctions: AuctionItem[] = [
     currentBid: 78900,
     bids: 5,
     timeLeft: "5d 12h",
-    image: "https://images.unsplash.com/photo-1610534440162-e3e0a7948e85?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80",
+    image: "https://images.unsplash.com/photo-1642980520563-eaab5ef63ef5?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     status: "active"
   },
   {

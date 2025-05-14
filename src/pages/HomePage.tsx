@@ -29,7 +29,7 @@ const HomePage = () => {
                 </Button>
               </Link>
               <Link to="/register">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+                <Button size="lg" className="border-white text-white hover:bg-white/10">
                   Start Selling
                 </Button>
               </Link>
@@ -134,7 +134,7 @@ const HomePage = () => {
               </Button>
             </Link>
             <Link to="/how-it-works">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+              <Button size="lg" className="border-white text-white hover:bg-white/10">
                 Learn More
               </Button>
             </Link>
