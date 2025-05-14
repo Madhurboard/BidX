@@ -138,23 +138,28 @@ const AuctionsList = () => {
         
         {sortedAuctions.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {sortedAuctions.map((auction) => (
-              <AuctionCard 
-                key={auction.id} 
-                auction={{
-                  id: auction.id,
-                  title: auction.title,
-                  description: auction.description,
-                  imageUrl: auction.auction_images && auction.auction_images.length > 0 
-                    ? auction.auction_images[0].image_url 
-                    : '/placeholder.svg',
-                  currentBid: auction.current_bid || auction.starting_price,
-                  timeLeft: getTimeLeft(auction.end_date),
-                  bids: auction.bids_count,
-                  status: auction.status as 'active' | 'ending-soon' | 'ended'
-                }} 
-              />
-            ))}
+            {sortedAuctions.map((auction) => {
+              // Get the first image from auction_images or use placeholder
+              const imageUrl = auction.auction_images && auction.auction_images.length > 0 
+                ? auction.auction_images[0].image_url 
+                : '/placeholder.svg';
+                
+              return (
+                <AuctionCard 
+                  key={auction.id} 
+                  auction={{
+                    id: auction.id,
+                    title: auction.title,
+                    description: auction.description,
+                    currentBid: auction.current_bid || auction.starting_price,
+                    timeLeft: getTimeLeft(auction.end_date),
+                    bids: auction.bids_count,
+                    status: auction.status as 'active' | 'ending-soon' | 'ended',
+                    image: imageUrl  // Pass the image URL correctly
+                  }} 
+                />
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-12 bg-white rounded-lg shadow-sm">
