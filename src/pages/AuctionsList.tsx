@@ -9,6 +9,7 @@ import { Search, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 import { toast } from '@/hooks/use-toast';
+import { mockAuctions } from '@/data/mockAuctions';
 
 type AuctionWithImage = Tables<'auctions'> & {
   auction_images: Tables<'auction_images'>[] | null;
@@ -23,6 +24,7 @@ const AuctionsList = () => {
   const [sortOption, setSortOption] = useState('ending-soon');
   const [auctions, setAuctions] = useState<AuctionWithImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showDemo, setShowDemo] = useState(true); // State to toggle demo auctions
   
   useEffect(() => {
     const fetchAuctions = async () => {
@@ -40,14 +42,13 @@ const AuctionsList = () => {
             description: error.message,
             variant: "destructive",
           });
-          return;
-        }
-        
-        if (data) {
+          setAuctions([]);
+        } else {
           setAuctions(data as AuctionWithImage[]);
         }
       } catch (error) {
         console.error('Error in auction fetch:', error);
+        setAuctions([]);
       } finally {
         setIsLoading(false);
       }
@@ -56,8 +57,43 @@ const AuctionsList = () => {
     fetchAuctions();
   }, []);
   
+  // Combine real and demo auctions if showDemo is true
+  const combinedAuctions = showDemo 
+    ? [
+        ...auctions.map(auction => ({
+          id: auction.id,
+          title: auction.title,
+          description: auction.description,
+          currentBid: auction.current_bid || auction.starting_price,
+          timeLeft: getTimeLeft(auction.end_date),
+          bids: auction.bids_count,
+          status: auction.status as 'active' | 'ending-soon' | 'ended',
+          image: auction.auction_images && auction.auction_images.length > 0 
+                 ? auction.auction_images[0].image_url 
+                 : '/placeholder.svg',
+          isDemo: false
+        })),
+        ...mockAuctions.map(auction => ({
+          ...auction,
+          isDemo: true
+        }))
+      ]
+    : auctions.map(auction => ({
+        id: auction.id,
+        title: auction.title,
+        description: auction.description,
+        currentBid: auction.current_bid || auction.starting_price,
+        timeLeft: getTimeLeft(auction.end_date),
+        bids: auction.bids_count,
+        status: auction.status as 'active' | 'ending-soon' | 'ended',
+        image: auction.auction_images && auction.auction_images.length > 0 
+               ? auction.auction_images[0].image_url 
+               : '/placeholder.svg',
+        isDemo: false
+      }));
+  
   // Filter auctions based on search term and status
-  const filteredAuctions = auctions.filter(auction => {
+  const filteredAuctions = combinedAuctions.filter(auction => {
     const matchesSearch = auction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           auction.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter ? auction.status === statusFilter : true;
@@ -69,13 +105,13 @@ const AuctionsList = () => {
   const sortedAuctions = [...filteredAuctions].sort((a, b) => {
     switch (sortOption) {
       case 'ending-soon':
-        return new Date(a.end_date).getTime() - new Date(b.end_date).getTime();
+        return a.status === 'ended' ? 1 : b.status === 'ended' ? -1 : 0;
       case 'price-low':
-        return (a.current_bid || a.starting_price) - (b.current_bid || b.starting_price);
+        return a.currentBid - b.currentBid;
       case 'price-high':
-        return (b.current_bid || b.starting_price) - (a.current_bid || a.starting_price);
+        return b.currentBid - a.currentBid;
       case 'most-bids':
-        return b.bids_count - a.bids_count;
+        return b.bids - a.bids;
       default:
         return 0;
     }
@@ -121,45 +157,48 @@ const AuctionsList = () => {
             </Select>
           </div>
           
-          <Tabs defaultValue="all" className="w-full" onValueChange={(value) => {
-            // Convert the value to a type-safe StatusType
-            const statusValue = value === "all" 
-              ? null 
-              : (value as StatusType);
-            setStatusFilter(statusValue);
-          }}>
-            <TabsList className="grid grid-cols-3 w-full md:w-[400px]">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="active">Active</TabsTrigger>
-              <TabsTrigger value="ending-soon">Ending Soon</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex justify-between items-center mb-4">
+            <Tabs defaultValue="all" className="w-full" onValueChange={(value) => {
+              // Convert the value to a type-safe StatusType
+              const statusValue = value === "all" 
+                ? null 
+                : (value as StatusType);
+              setStatusFilter(statusValue);
+            }}>
+              <TabsList className="grid grid-cols-3 w-full md:w-[400px]">
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="active">Active</TabsTrigger>
+                <TabsTrigger value="ending-soon">Ending Soon</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDemo(!showDemo)}
+              className="ml-auto"
+            >
+              {showDemo ? "Hide Demo Auctions" : "Show Demo Auctions"}
+            </Button>
+          </div>
         </div>
         
         {sortedAuctions.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {sortedAuctions.map((auction) => {
-              // Get the first image from auction_images or use placeholder
-              const imageUrl = auction.auction_images && auction.auction_images.length > 0 
-                ? auction.auction_images[0].image_url 
-                : '/placeholder.svg';
-                
-              return (
-                <AuctionCard 
-                  key={auction.id} 
-                  auction={{
-                    id: auction.id,
-                    title: auction.title,
-                    description: auction.description,
-                    currentBid: auction.current_bid || auction.starting_price,
-                    timeLeft: getTimeLeft(auction.end_date),
-                    bids: auction.bids_count,
-                    status: auction.status as 'active' | 'ending-soon' | 'ended',
-                    image: imageUrl  // Pass the image URL correctly
-                  }} 
-                />
-              );
-            })}
+            {sortedAuctions.map((auction) => (
+              <AuctionCard 
+                key={auction.id + (auction.isDemo ? '-demo' : '')} 
+                auction={{
+                  id: auction.id,
+                  title: auction.title,
+                  description: auction.description,
+                  currentBid: auction.currentBid,
+                  timeLeft: auction.timeLeft,
+                  bids: auction.bids,
+                  status: auction.status,
+                  image: auction.image
+                }} 
+              />
+            ))}
           </div>
         ) : (
           <div className="text-center py-12 bg-white rounded-lg shadow-sm">
