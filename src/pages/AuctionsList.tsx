@@ -8,14 +8,18 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
+import { toast } from '@/hooks/use-toast';
 
 type AuctionWithImage = Tables<'auctions'> & {
   auction_images: Tables<'auction_images'>[] | null;
 };
 
+// Define the allowed status types
+type StatusType = 'active' | 'ending-soon' | 'ended' | null;
+
 const AuctionsList = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusType>(null);
   const [sortOption, setSortOption] = useState('ending-soon');
   const [auctions, setAuctions] = useState<AuctionWithImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,6 +35,11 @@ const AuctionsList = () => {
           
         if (error) {
           console.error('Error fetching auctions:', error);
+          toast({
+            title: "Error fetching auctions",
+            description: error.message,
+            variant: "destructive",
+          });
           return;
         }
         
@@ -112,7 +121,13 @@ const AuctionsList = () => {
             </Select>
           </div>
           
-          <Tabs defaultValue="all" className="w-full" onValueChange={(value) => setStatusFilter(value === 'all' ? null : value)}>
+          <Tabs defaultValue="all" className="w-full" onValueChange={(value) => {
+            // Convert the value to a type-safe StatusType
+            const statusValue = value === "all" 
+              ? null 
+              : (value as StatusType);
+            setStatusFilter(statusValue);
+          }}>
             <TabsList className="grid grid-cols-3 w-full md:w-[400px]">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="active">Active</TabsTrigger>
@@ -136,7 +151,7 @@ const AuctionsList = () => {
                   currentBid: auction.current_bid || auction.starting_price,
                   timeLeft: getTimeLeft(auction.end_date),
                   bids: auction.bids_count,
-                  status: auction.status
+                  status: auction.status as 'active' | 'ending-soon' | 'ended'
                 }} 
               />
             ))}

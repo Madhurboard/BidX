@@ -8,6 +8,8 @@ export type ToastProps = {
   action?: React.ReactNode
   variant?: "default" | "destructive"
   duration?: number
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 const TOAST_LIMIT = 5
@@ -19,6 +21,8 @@ type ToasterToast = ToastProps & {
   description?: string
   action?: React.ReactNode
   dismissable?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 let count = 0
