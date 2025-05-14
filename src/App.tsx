@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
 import AuctionsList from "./pages/AuctionsList";
 import AuctionDetail from "./pages/AuctionDetail";
 import SellItem from "./pages/SellItem";
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/how-it-works" element={
               <Layout>
                 <HowItWorks />

@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import BidXLogo from '@/components/BidXLogo';
 import { useAuth } from '@/components/AuthProvider';
+import { Loader2 } from 'lucide-react';
 
 // Form validation schema
 const authSchema = z.object({
@@ -24,6 +25,8 @@ type AuthFormValues = z.infer<typeof authSchema>;
 const Auth = () => {
   const { user, signIn, signUp, signInWithGoogle } = useAuth();
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   
   const form = useForm<AuthFormValues>({
     resolver: zodResolver(authSchema),
@@ -34,10 +37,25 @@ const Auth = () => {
   });
 
   const onSubmit = async (values: AuthFormValues) => {
-    if (activeTab === 'login') {
-      await signIn(values.email, values.password);
-    } else {
-      await signUp(values.email, values.password);
+    setIsSubmitting(true);
+    try {
+      if (activeTab === 'login') {
+        await signIn(values.email, values.password);
+      } else {
+        await signUp(values.email, values.password);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleSubmitting(true);
+    try {
+      await signInWithGoogle();
+    } finally {
+      // We don't set this to false immediately as we'll be redirected
+      setTimeout(() => setIsGoogleSubmitting(false), 5000);
     }
   };
 
@@ -47,14 +65,14 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
+      <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
           <BidXLogo />
         </div>
         
-        <Card>
-          <CardHeader>
+        <Card className="shadow-lg">
+          <CardHeader className="pb-6">
             <CardTitle className="text-2xl font-bold text-center">Welcome to BidX</CardTitle>
             <CardDescription className="text-center">
               The premier online auction platform
@@ -100,12 +118,23 @@ const Auth = () => {
                     />
                   </CardContent>
                   
-                  <CardFooter className="flex flex-col gap-4">
-                    <Button type="submit" className="w-full bg-auction-blue hover:bg-auction-darkBlue">
-                      Sign In
+                  <CardFooter className="flex flex-col gap-4 pt-2 pb-6 px-6">
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-auction-blue hover:bg-auction-darkBlue"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Signing In...
+                        </>
+                      ) : (
+                        "Sign In"
+                      )}
                     </Button>
                     
-                    <div className="relative w-full flex items-center justify-center">
+                    <div className="relative w-full flex items-center justify-center my-2">
                       <hr className="w-full border-t border-gray-300" />
                       <span className="absolute bg-white px-2 text-xs text-gray-500">OR</span>
                     </div>
@@ -114,10 +143,20 @@ const Auth = () => {
                       type="button" 
                       variant="outline" 
                       className="w-full"
-                      onClick={() => signInWithGoogle()}
+                      onClick={handleGoogleSignIn}
+                      disabled={isGoogleSubmitting}
                     >
-                      <img src="https://www.google.com/favicon.ico" alt="Google" className="h-4 w-4 mr-2" />
-                      Sign in with Google
+                      {isGoogleSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Connecting to Google...
+                        </>
+                      ) : (
+                        <>
+                          <img src="https://www.google.com/favicon.ico" alt="Google" className="h-4 w-4 mr-2" />
+                          Sign in with Google
+                        </>
+                      )}
                     </Button>
                   </CardFooter>
                 </form>
@@ -159,12 +198,23 @@ const Auth = () => {
                     />
                   </CardContent>
                   
-                  <CardFooter className="flex flex-col gap-4">
-                    <Button type="submit" className="w-full bg-auction-blue hover:bg-auction-darkBlue">
-                      Create Account
+                  <CardFooter className="flex flex-col gap-4 pt-2 pb-6 px-6">
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-auction-blue hover:bg-auction-darkBlue"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Creating Account...
+                        </>
+                      ) : (
+                        "Create Account"
+                      )}
                     </Button>
                     
-                    <div className="relative w-full flex items-center justify-center">
+                    <div className="relative w-full flex items-center justify-center my-2">
                       <hr className="w-full border-t border-gray-300" />
                       <span className="absolute bg-white px-2 text-xs text-gray-500">OR</span>
                     </div>
@@ -173,10 +223,20 @@ const Auth = () => {
                       type="button" 
                       variant="outline" 
                       className="w-full"
-                      onClick={() => signInWithGoogle()}
+                      onClick={handleGoogleSignIn}
+                      disabled={isGoogleSubmitting}
                     >
-                      <img src="https://www.google.com/favicon.ico" alt="Google" className="h-4 w-4 mr-2" />
-                      Sign up with Google
+                      {isGoogleSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Connecting to Google...
+                        </>
+                      ) : (
+                        <>
+                          <img src="https://www.google.com/favicon.ico" alt="Google" className="h-4 w-4 mr-2" />
+                          Sign up with Google
+                        </>
+                      )}
                     </Button>
                   </CardFooter>
                 </form>
