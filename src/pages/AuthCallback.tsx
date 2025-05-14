@@ -13,12 +13,11 @@ const AuthCallback = () => {
       setIsLoading(true);
       
       try {
-        // Extract hash parameters from URL
-        const hash = window.location.hash;
-        
         // Process the session from the URL hash
-        if (hash && hash.includes('access_token')) {
-          // Let Supabase handle the OAuth token exchange
+        const hashParams = window.location.hash;
+        
+        if (hashParams && hashParams.includes('access_token')) {
+          // Let Supabase handle the hash params directly
           const { data, error } = await supabase.auth.getSession();
           
           if (error) {
@@ -29,10 +28,17 @@ const AuthCallback = () => {
             throw new Error('No session found');
           }
           
+          // Successfully authenticated
           toast({
             title: "Successfully signed in",
             description: "Welcome to BidX!",
           });
+        } else {
+          // No hash params, attempt to get session anyway
+          const { data, error } = await supabase.auth.getSession();
+          if (error || !data.session) {
+            throw new Error('Authentication failed');
+          }
         }
       } catch (err: any) {
         console.error('OAuth callback error:', err);
