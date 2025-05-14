@@ -3,19 +3,22 @@ import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PlaceBidProps {
   auctionId: string;
   currentBid: number;
   minBidIncrement: number;
   onBidPlaced: (amount: number) => void;
+  isDemo?: boolean;
 }
 
 const PlaceBid: React.FC<PlaceBidProps> = ({ 
   auctionId, 
   currentBid, 
   minBidIncrement, 
-  onBidPlaced 
+  onBidPlaced,
+  isDemo = false
 }) => {
   const [bidAmount, setBidAmount] = useState<string>((currentBid + minBidIncrement).toString());
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,15 +63,46 @@ const PlaceBid: React.FC<PlaceBidProps> = ({
     
     setIsSubmitting(true);
     
-    // Simulate API call to place bid
-    setTimeout(() => {
+    try {
+      if (!isDemo) {
+        // Update the auction in the database with the new bid
+        const { error } = await supabase
+          .from('auctions')
+          .update({ 
+            current_bid: amount,
+            bids_count: supabase.sql('bids_count + 1')
+          })
+          .eq('id', auctionId);
+          
+        if (error) {
+          console.error('Error updating bid:', error);
+          toast({
+            title: "Error placing bid",
+            description: error.message,
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+      
+      // Call the onBidPlaced callback
       onBidPlaced(amount);
+      
       toast({
         title: "Bid placed successfully!",
         description: `You've placed a bid of ₹${amount.toLocaleString()}`,
       });
+    } catch (err) {
+      console.error('Error placing bid:', err);
+      toast({
+        title: "Error placing bid",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
   
   return (
