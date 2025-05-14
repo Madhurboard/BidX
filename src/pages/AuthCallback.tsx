@@ -18,7 +18,7 @@ const AuthCallback = () => {
         
         if (hashParams && hashParams.includes('access_token')) {
           // Let Supabase handle the hash params directly
-          const { data, error } = await supabase.auth.getSession();
+          const { data, error } = await supabase.auth.getSessionFromUrl();
           
           if (error) {
             throw error;
