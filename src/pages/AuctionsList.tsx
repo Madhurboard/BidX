@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import AuctionCard from '@/components/AuctionCard';
 import { Input } from '@/components/ui/input';
@@ -195,7 +194,8 @@ const AuctionsList = () => {
                   timeLeft: auction.timeLeft,
                   bids: auction.bids,
                   status: auction.status,
-                  image: auction.image
+                  image: auction.image,
+                  isDemo: auction.isDemo
                 }} 
               />
             ))}

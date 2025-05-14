@@ -12,6 +12,12 @@ import CountdownTimer from '@/components/CountdownTimer';
 import { toast } from '@/components/ui/use-toast';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, User, AlertCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Tables } from '@/integrations/supabase/types';
+
+type AuctionWithImage = Tables<'auctions'> & {
+  auction_images: Tables<'auction_images'>[] | null;
+};
 
 const AuctionDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,25 +26,85 @@ const AuctionDetail = () => {
   const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
-    // Simulate API fetch with a slight delay
-    setTimeout(() => {
+    const fetchAuction = async () => {
+      setLoading(true);
+      setError(null);
+      
       if (!id) {
         setError("Auction ID is missing");
         setLoading(false);
         return;
       }
       
-      const auctionDetail = getMockAuctionDetail(id);
-      
-      if (!auctionDetail) {
-        setError("Auction not found");
+      // Check if this is a mock auction from demo data
+      if (id.startsWith('mock-')) {
+        const mockId = id.replace('mock-', '');
+        const auctionDetail = getMockAuctionDetail(mockId);
+        
+        if (!auctionDetail) {
+          setError("Auction not found");
+          setLoading(false);
+          return;
+        }
+        
+        setAuction(auctionDetail);
         setLoading(false);
         return;
       }
       
-      setAuction(auctionDetail);
-      setLoading(false);
-    }, 800);
+      // It's a real auction, fetch from Supabase
+      try {
+        const { data, error: fetchError } = await supabase
+          .from('auctions')
+          .select('*, auction_images(*)')
+          .eq('id', id)
+          .single();
+        
+        if (fetchError) {
+          console.error('Error fetching auction:', fetchError);
+          setError("Error loading auction");
+          setLoading(false);
+          return;
+        }
+        
+        if (!data) {
+          setError("Auction not found");
+          setLoading(false);
+          return;
+        }
+        
+        // Transform Supabase auction data to match the format expected by the component
+        const transformedAuction = {
+          id: data.id,
+          title: data.title,
+          description: data.description,
+          currentBid: data.current_bid || data.starting_price,
+          minBidIncrement: Math.max(10, Math.floor(data.starting_price * 0.05)), // 5% of starting price or at least 10
+          status: data.status,
+          endTime: data.end_date,
+          seller: {
+            id: data.user_id,
+            name: "Seller", // We'll improve this later with profile data
+            rating: 4.8,
+            totalSales: 42,
+            joinedDate: "2023-01-01"
+          },
+          bids: [], // We'll improve this later with actual bids
+          image: data.auction_images && data.auction_images.length > 0 
+            ? data.auction_images[0].image_url 
+            : '/placeholder.svg',
+        };
+        
+        setAuction(transformedAuction);
+        setLoading(false);
+      } catch (err) {
+        console.error('Unexpected error:', err);
+        setError("An unexpected error occurred");
+        setLoading(false);
+      }
+    };
+    
+    fetchAuction();
   }, [id]);
   
   const handleBidPlaced = (amount: number) => {
@@ -202,7 +268,7 @@ const AuctionDetail = () => {
                 ₹{auction.currentBid.toLocaleString()}
               </p>
               <p className="text-sm text-muted-foreground">
-                {auction.bids.length} bid{auction.bids.length !== 1 ? 's' : ''}
+                {auction.bids ? auction.bids.length : 0} bid{auction.bids && auction.bids.length !== 1 ? 's' : ''}
               </p>
             </div>
             
@@ -231,7 +297,7 @@ const AuctionDetail = () => {
           </div>
           
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <BidHistory bids={auction.bids} />
+            <BidHistory bids={auction.bids || []} />
           </div>
         </div>
       </div>

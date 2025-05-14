@@ -14,6 +14,7 @@ export interface AuctionItem {
   timeLeft: string;
   image: string;
   status: 'active' | 'ending-soon' | 'ended';
+  isDemo?: boolean;
 }
 
 interface AuctionCardProps {
@@ -33,6 +34,9 @@ const AuctionCard: React.FC<AuctionCardProps> = ({ auction }) => {
         return null;
     }
   };
+  
+  // For demo auctions, prefix the id with 'mock-'
+  const auctionLinkId = auction.isDemo ? `mock-${auction.id}` : auction.id;
 
   return (
     <Card className="auction-card h-full flex flex-col">
@@ -62,7 +66,7 @@ const AuctionCard: React.FC<AuctionCardProps> = ({ auction }) => {
         <p className="text-xs text-muted-foreground mt-2">{auction.bids} bid(s)</p>
       </CardContent>
       <CardFooter className="p-4 pt-0">
-        <Link to={`/auction/${auction.id}`} className="w-full">
+        <Link to={`/auction/${auctionLinkId}`} className="w-full">
           <Button 
             variant="default" 
             className="w-full bg-auction-blue hover:bg-auction-darkBlue"
