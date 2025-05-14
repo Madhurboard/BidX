@@ -35,7 +35,7 @@ const AuthCallback = () => {
           });
         } else {
           // No hash params, attempt to get session anyway
-          const { data, error } = await supabase.auth.getSession();
+          const { data, error } = await supabase.auth.getSessionFromUrl();
           if (error || !data.session) {
             throw new Error('Authentication failed');
           }
