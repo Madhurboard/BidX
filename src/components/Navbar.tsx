@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Search, User, LogOut } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,17 @@ import {
 const Navbar = () => {
   const { user, signOut } = useAuth();
   const isAuthenticated = !!user;
+  const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
+  
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      navigate(`/auctions?search=${encodeURIComponent(searchTerm.trim())}`);
+    } else {
+      navigate('/auctions');
+    }
+  };
 
   return (
     <header className="border-b sticky top-0 z-50 w-full bg-white">
@@ -40,14 +51,16 @@ const Navbar = () => {
         </div>
         
         <div className="hidden md:flex items-center gap-4 md:w-1/3">
-          <div className="relative w-full">
+          <form onSubmit={handleSearch} className="relative w-full">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search auctions..."
               className="w-full pl-9 rounded-md"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </div>
+          </form>
         </div>
 
         <div className="flex items-center gap-4">

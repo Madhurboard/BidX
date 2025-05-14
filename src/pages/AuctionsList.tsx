@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import AuctionCard from '@/components/AuctionCard';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 import { toast } from '@/hooks/use-toast';
 import { mockAuctions } from '@/data/mockAuctions';
+import { useSearchParams } from 'react-router-dom';
 
 type AuctionWithImage = Tables<'auctions'> & {
   auction_images: Tables<'auction_images'>[] | null;
@@ -18,12 +20,31 @@ type AuctionWithImage = Tables<'auctions'> & {
 type StatusType = 'active' | 'ending-soon' | 'ended' | null;
 
 const AuctionsList = () => {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialSearchTerm = searchParams.get('search') || '';
+  
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [statusFilter, setStatusFilter] = useState<StatusType>(null);
   const [sortOption, setSortOption] = useState('ending-soon');
   const [auctions, setAuctions] = useState<AuctionWithImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showDemo, setShowDemo] = useState(true); // State to toggle demo auctions
+  
+  // Update search term when URL parameter changes
+  useEffect(() => {
+    const searchFromUrl = searchParams.get('search') || '';
+    setSearchTerm(searchFromUrl);
+  }, [searchParams]);
+  
+  // Handle search form submission
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      setSearchParams({ search: searchTerm.trim() });
+    } else {
+      setSearchParams({});
+    }
+  };
   
   useEffect(() => {
     const fetchAuctions = async () => {
@@ -134,14 +155,23 @@ const AuctionsList = () => {
         <div className="bg-white p-4 rounded-lg shadow-sm mb-8">
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="relative flex-grow">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search auctions..."
-                className="pl-9"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+              <form onSubmit={handleSearch} className="relative w-full">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search auctions..."
+                  className="pl-9"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <Button 
+                  type="submit" 
+                  className="absolute right-1 top-1 h-8"
+                  variant="ghost"
+                >
+                  Search
+                </Button>
+              </form>
             </div>
             <Select value={sortOption} onValueChange={setSortOption}>
               <SelectTrigger className="w-full md:w-[200px]">
@@ -206,7 +236,11 @@ const AuctionsList = () => {
             <p className="text-muted-foreground mb-6">
               We couldn't find any auctions matching your search criteria.
             </p>
-            <Button onClick={() => { setSearchTerm(''); setStatusFilter(null); }}>
+            <Button onClick={() => { 
+              setSearchTerm(''); 
+              setStatusFilter(null);
+              setSearchParams({}); 
+            }}>
               Clear Filters
             </Button>
           </div>
