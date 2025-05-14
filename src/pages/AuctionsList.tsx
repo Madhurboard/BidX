@@ -201,13 +201,7 @@ const AuctionsList = () => {
               </TabsList>
             </Tabs>
             
-            <Button 
-              variant="outline" 
-              onClick={() => setShowDemo(!showDemo)}
-              className="ml-auto"
-            >
-              {showDemo ? "Hide Demo Auctions" : "Show Demo Auctions"}
-            </Button>
+          
           </div>
         </div>
         
