@@ -14,6 +14,9 @@ import AuctionsList from "./pages/AuctionsList";
 import AuctionDetail from "./pages/AuctionDetail";
 import SellItem from "./pages/SellItem";
 import HowItWorks from "./pages/HowItWorks";
+import Profile from "./pages/Profile";
+import MyAuctions from "./pages/MyAuctions";
+import MyBids from "./pages/MyBids";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { AuthProvider } from "./components/AuthProvider";
@@ -64,6 +67,27 @@ const App = () => (
               <Layout>
                 <ProtectedRoute>
                   <SellItem />
+                </ProtectedRoute>
+              </Layout>
+            } />
+            <Route path="/profile" element={
+              <Layout>
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              </Layout>
+            } />
+            <Route path="/my-auctions" element={
+              <Layout>
+                <ProtectedRoute>
+                  <MyAuctions />
+                </ProtectedRoute>
+              </Layout>
+            } />
+            <Route path="/my-bids" element={
+              <Layout>
+                <ProtectedRoute>
+                  <MyBids />
                 </ProtectedRoute>
               </Layout>
             } />
