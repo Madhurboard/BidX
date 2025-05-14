@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { getMockAuctionDetail } from '@/data/mockAuctions';
@@ -9,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import BidHistory from '@/components/BidHistory';
 import PlaceBid from '@/components/PlaceBid';
 import CountdownTimer from '@/components/CountdownTimer';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, User, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,6 +53,7 @@ const AuctionDetail = () => {
       
       // It's a real auction, fetch from Supabase
       try {
+        console.log("Fetching real auction with ID:", id);
         const { data, error: fetchError } = await supabase
           .from('auctions')
           .select('*, auction_images(*)')
@@ -73,6 +73,8 @@ const AuctionDetail = () => {
           return;
         }
         
+        console.log("Fetched auction data:", data);
+        
         // Transform Supabase auction data to match the format expected by the component
         const transformedAuction = {
           id: data.id,
@@ -80,7 +82,7 @@ const AuctionDetail = () => {
           description: data.description,
           currentBid: data.current_bid || data.starting_price,
           minBidIncrement: Math.max(10, Math.floor(data.starting_price * 0.05)), // 5% of starting price or at least 10
-          status: data.status,
+          status: data.status || 'active',
           endTime: data.end_date,
           seller: {
             id: data.user_id,
