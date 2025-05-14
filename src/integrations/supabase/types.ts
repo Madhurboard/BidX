@@ -9,7 +9,107 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      auction_images: {
+        Row: {
+          auction_id: string
+          id: string
+          image_url: string
+          sort_order: number
+        }
+        Insert: {
+          auction_id: string
+          id?: string
+          image_url: string
+          sort_order?: number
+        }
+        Update: {
+          auction_id?: string
+          id?: string
+          image_url?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auction_images_auction_id_fkey"
+            columns: ["auction_id"]
+            isOneToOne: false
+            referencedRelation: "auctions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      auctions: {
+        Row: {
+          bids_count: number
+          category: string
+          created_at: string
+          current_bid: number | null
+          description: string
+          end_date: string
+          id: string
+          reserve_price: number | null
+          starting_price: number
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          bids_count?: number
+          category: string
+          created_at?: string
+          current_bid?: number | null
+          description: string
+          end_date: string
+          id?: string
+          reserve_price?: number | null
+          starting_price: number
+          status?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          bids_count?: number
+          category?: string
+          created_at?: string
+          current_bid?: number | null
+          description?: string
+          end_date?: string
+          id?: string
+          reserve_price?: number | null
+          starting_price?: number
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

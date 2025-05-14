@@ -6,6 +6,9 @@ import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { Upload } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
+import { useAuth } from '@/components/AuthProvider';
+import { supabase } from '@/integrations/supabase/client';
 
 // UI Components
 import { Input } from '@/components/ui/input';
@@ -40,6 +43,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 const SellItem = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [images, setImages] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -88,25 +92,86 @@ const SellItem = () => {
   };
 
   const onSubmit = async (data: FormValues) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to create an auction",
+        variant: "destructive"
+      });
+      navigate('/auth');
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
       // Combine date and time
       const endDateTime = new Date(`${data.endDate}T${data.endTime}`);
       
-      // Here you would normally upload images and submit data to your backend
-      console.log("Form data:", data);
-      console.log("Images:", images);
-      console.log("End date and time:", endDateTime);
+      // Insert auction into database
+      const { data: auctionData, error: auctionError } = await supabase
+        .from('auctions')
+        .insert({
+          user_id: user.id,
+          title: data.title,
+          description: data.description,
+          starting_price: data.startingPrice,
+          reserve_price: data.reservePrice,
+          category: data.category,
+          end_date: endDateTime.toISOString(),
+          current_bid: data.startingPrice,
+        })
+        .select('id')
+        .single();
       
-      // Simulate successful submission
+      if (auctionError || !auctionData) {
+        throw auctionError || new Error('Failed to create auction');
+      }
+
+      // Upload images if any
+      if (images.length > 0) {
+        const imageUploadPromises = images.map(async (image, index) => {
+          const fileExt = image.name.split('.').pop();
+          const fileName = `${uuidv4()}.${fileExt}`;
+          const filePath = `${user.id}/${auctionData.id}/${fileName}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('auction-images')
+            .upload(filePath, image);
+            
+          if (uploadError) {
+            throw uploadError;
+          }
+          
+          // Get the public URL
+          const { data: publicUrlData } = supabase.storage
+            .from('auction-images')
+            .getPublicUrl(filePath);
+            
+          // Insert image record
+          const { error: imageInsertError } = await supabase
+            .from('auction_images')
+            .insert({
+              auction_id: auctionData.id,
+              image_url: publicUrlData.publicUrl,
+              sort_order: index
+            });
+            
+          if (imageInsertError) {
+            throw imageInsertError;
+          }
+        });
+        
+        await Promise.all(imageUploadPromises);
+      }
+      
       toast({
         title: "Auction created successfully!",
         description: "Your item has been listed for auction.",
       });
       
       // Redirect to auction page
-      setTimeout(() => navigate("/auctions"), 1500);
+      navigate(`/auction/${auctionData.id}`);
     } catch (error) {
       console.error("Error submitting auction:", error);
       toast({

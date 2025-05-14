@@ -2,13 +2,22 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Search, User } from 'lucide-react';
+import { Search, User, LogOut } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import BidXLogo from './BidXLogo';
+import { useAuth } from './AuthProvider';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const Navbar = () => {
-  // Mock authentication state (will be replaced with actual auth)
-  const isAuthenticated = false;
+  const { user, signOut } = useAuth();
+  const isAuthenticated = !!user;
 
   return (
     <header className="border-b sticky top-0 z-50 w-full bg-white">
@@ -44,11 +53,31 @@ const Navbar = () => {
         <div className="flex items-center gap-4">
           {isAuthenticated ? (
             <>
-              <Link to="/profile">
-                <Button variant="ghost" size="icon">
-                  <User className="h-5 w-5" />
-                </Button>
-              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="cursor-pointer">Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/my-auctions" className="cursor-pointer">My Auctions</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/my-bids" className="cursor-pointer">My Bids</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Link to="/sell">
                 <Button variant="default" className="bg-auction-blue hover:bg-auction-darkBlue">
                   + New Auction
@@ -57,10 +86,10 @@ const Navbar = () => {
             </>
           ) : (
             <>
-              <Link to="/login">
+              <Link to="/auth">
                 <Button variant="outline">Log In</Button>
               </Link>
-              <Link to="/register">
+              <Link to="/auth">
                 <Button className="bg-auction-blue hover:bg-auction-darkBlue">Sign Up</Button>
               </Link>
             </>
