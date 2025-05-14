@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Search, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import BidXLogo from './BidXLogo';
 
 const Navbar = () => {
   // Mock authentication state (will be replaced with actual auth)
@@ -14,7 +15,7 @@ const Navbar = () => {
       <div className="container flex h-16 items-center justify-between py-4">
         <div className="flex items-center gap-6">
           <Link to="/" className="flex items-center">
-            <span className="text-2xl font-bold text-auction-blue">BidHub</span>
+            <BidXLogo />
           </Link>
           <nav className="hidden md:flex gap-6">
             <Link to="/auctions" className="text-sm font-medium hover:text-auction-blue transition-colors">
@@ -48,7 +49,7 @@ const Navbar = () => {
                   <User className="h-5 w-5" />
                 </Button>
               </Link>
-              <Link to="/create-auction">
+              <Link to="/sell">
                 <Button variant="default" className="bg-auction-blue hover:bg-auction-darkBlue">
                   + New Auction
                 </Button>

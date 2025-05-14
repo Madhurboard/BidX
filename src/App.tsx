@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import AuctionsList from "./pages/AuctionsList";
 import AuctionDetail from "./pages/AuctionDetail";
+import SellItem from "./pages/SellItem";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
@@ -44,6 +45,11 @@ const App = () => (
           <Route path="/auction/:id" element={
             <Layout>
               <AuctionDetail />
+            </Layout>
+          } />
+          <Route path="/sell" element={
+            <Layout>
+              <SellItem />
             </Layout>
           } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
