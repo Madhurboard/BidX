@@ -4,13 +4,11 @@ import React from 'react';
 const BidXLogo = ({ className }: { className?: string }) => {
   return (
     <div className={`flex items-center ${className}`}>
-      <div className="relative h-8 w-8 mr-2">
-        <div className="absolute inset-0 bg-auction-blue rounded-full opacity-80"></div>
-        <div className="absolute inset-1 bg-white rounded-full flex items-center justify-center">
-          <span className="text-auction-blue font-bold text-lg">X</span>
-        </div>
-      </div>
-      <span className="text-xl font-bold">BidX</span>
+      <img 
+        src="/lovable-uploads/ac8496e0-469f-4a81-88f8-51632950c61e.png" 
+        alt="BidX Logo" 
+        className="h-8 md:h-10"
+      />
     </div>
   );
 };

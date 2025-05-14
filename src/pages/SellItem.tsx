@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
-import { Upload, ChartBar } from 'lucide-react';
+import { Upload } from 'lucide-react';
 
 // UI Components
 import { Input } from '@/components/ui/input';
@@ -21,7 +21,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import BidHistoryGraph from '@/components/BidHistoryGraph';
 
 // Form schema validation
 const formSchema = z.object({
@@ -44,16 +43,6 @@ const SellItem = () => {
   const [images, setImages] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Sample data for the market insights
-  const sampleAveragePrices = [
-    { month: 'Jan', price: 12000 },
-    { month: 'Feb', price: 13500 },
-    { month: 'Mar', price: 13200 },
-    { month: 'Apr', price: 14500 },
-    { month: 'May', price: 15800 },
-    { month: 'Jun', price: 16200 },
-  ];
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -329,26 +318,9 @@ const SellItem = () => {
           </Card>
         </div>
         
-        {/* Sidebar with tips and market insights */}
+        {/* Sidebar with tips */}
         <div>
           <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <ChartBar className="mr-2 h-5 w-5" />
-                  Market Insights
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">Recent Sales in Your Category</h4>
-                    <BidHistoryGraph data={sampleAveragePrices} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
             <Card>
               <CardHeader>
                 <CardTitle>Selling Tips</CardTitle>
@@ -375,7 +347,33 @@ const SellItem = () => {
                     <span className="text-auction-blue mr-2 font-bold">•</span>
                     <span>Respond quickly to questions from potential buyers</span>
                   </li>
+                  <li className="flex items-start">
+                    <span className="text-auction-blue mr-2 font-bold">•</span>
+                    <span>Include measurements and any unique features</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-auction-blue mr-2 font-bold">•</span>
+                    <span>Clearly state any flaws or imperfections</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-auction-blue mr-2 font-bold">•</span>
+                    <span>Mention if the item is rare or limited edition</span>
+                  </li>
                 </ul>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Shipping Information</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Be sure to consider shipping costs when setting your prices. You can specify shipping options after your auction ends.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  BidX recommends using reputable courier services and always providing tracking information to buyers.
+                </p>
               </CardContent>
             </Card>
           </div>

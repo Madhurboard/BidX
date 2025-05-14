@@ -11,6 +11,7 @@ import Register from "./pages/Register";
 import AuctionsList from "./pages/AuctionsList";
 import AuctionDetail from "./pages/AuctionDetail";
 import SellItem from "./pages/SellItem";
+import HowItWorks from "./pages/HowItWorks";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
@@ -37,6 +38,11 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/how-it-works" element={
+            <Layout>
+              <HowItWorks />
+            </Layout>
+          } />
           <Route path="/auctions" element={
             <Layout>
               <AuctionsList />
