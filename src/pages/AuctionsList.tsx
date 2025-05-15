@@ -75,6 +75,29 @@ const AuctionsList = () => {
     };
     
     fetchAuctions();
+    
+    // Set up real-time subscription for auction updates
+    const channel = supabase
+      .channel('public:auctions')
+      .on('postgres_changes', 
+        { event: 'UPDATE', schema: 'public', table: 'auctions' },
+        () => {
+          console.log('Auction updated, refreshing data');
+          fetchAuctions();
+        }
+      )
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'auctions' },
+        () => {
+          console.log('New auction added, refreshing data');
+          fetchAuctions();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
   
   // Combine real and demo auctions if showDemo is true
@@ -201,7 +224,17 @@ const AuctionsList = () => {
               </TabsList>
             </Tabs>
             
-          
+            <div className="flex items-center">
+              <label className="text-sm mr-2">
+                <input
+                  type="checkbox"
+                  checked={showDemo}
+                  onChange={(e) => setShowDemo(e.target.checked)}
+                  className="mr-1"
+                />
+                Show Demo Auctions
+              </label>
+            </div>
           </div>
         </div>
         

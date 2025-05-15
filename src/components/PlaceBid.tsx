@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PlaceBidProps {
   auctionId: string;
@@ -60,15 +61,54 @@ const PlaceBid: React.FC<PlaceBidProps> = ({
     
     setIsSubmitting(true);
     
-    // Simulate API call to place bid
-    setTimeout(() => {
-      onBidPlaced(amount);
+    try {
+      // Get current user's session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Authentication required",
+          description: "You must be logged in to place a bid",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Store the bid in Supabase
+      const { error } = await supabase
+        .from('bids')
+        .insert({
+          auction_id: auctionId,
+          user_id: session.user.id,
+          amount: amount
+        });
+      
+      if (error) {
+        console.error('Error placing bid:', error);
+        toast({
+          title: "Failed to place bid",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        // Call the onBidPlaced callback to update the UI
+        onBidPlaced(amount);
+        toast({
+          title: "Bid placed successfully!",
+          description: `You've placed a bid of ₹${amount.toLocaleString()}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error placing bid:', error);
       toast({
-        title: "Bid placed successfully!",
-        description: `You've placed a bid of ₹${amount.toLocaleString()}`,
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
       });
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
   
   return (

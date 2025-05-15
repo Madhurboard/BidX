@@ -1,14 +1,95 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import AuctionCard from '@/components/AuctionCard';
 import { mockAuctions } from '@/data/mockAuctions';
+import { supabase } from '@/integrations/supabase/client';
+import { Tables } from '@/integrations/supabase/types';
+import { Loader2 } from 'lucide-react';
+
+type AuctionWithImage = Tables<'auctions'> & {
+  auction_images: Tables<'auction_images'>[] | null;
+};
 
 const HomePage = () => {
-  // Filter auctions for different sections
-  const featuredAuctions = mockAuctions.filter(auction => auction.status === 'active').slice(0, 3);
-  const endingSoonAuctions = mockAuctions.filter(auction => auction.status === 'ending-soon');
+  const [userAuctions, setUserAuctions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Fetch real auctions from Supabase
+  useEffect(() => {
+    const fetchAuctions = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('auctions')
+          .select('*, auction_images(*)')
+          .order('created_at', { ascending: false })
+          .limit(6);
+          
+        if (error) {
+          console.error('Error fetching auctions:', error);
+          setUserAuctions([]);
+        } else {
+          // Transform auctions to the expected format
+          const transformedAuctions = (data as AuctionWithImage[]).map(auction => ({
+            id: auction.id,
+            title: auction.title,
+            description: auction.description,
+            currentBid: auction.current_bid || auction.starting_price,
+            timeLeft: getTimeLeft(auction.end_date),
+            bids: auction.bids_count,
+            status: auction.status as 'active' | 'ending-soon' | 'ended',
+            image: auction.auction_images && auction.auction_images.length > 0 
+                  ? auction.auction_images[0].image_url 
+                  : '/placeholder.svg',
+            isDemo: false
+          }));
+          setUserAuctions(transformedAuctions);
+        }
+      } catch (error) {
+        console.error('Error in auction fetch:', error);
+        setUserAuctions([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchAuctions();
+  }, []);
+  
+  // Helper function to calculate time left
+  const getTimeLeft = (endDate: string) => {
+    const end = new Date(endDate);
+    const now = new Date();
+    const diff = end.getTime() - now.getTime();
+    
+    if (diff <= 0) return 'Ended';
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    
+    if (days > 0) {
+      return `${days}d ${hours}h left`;
+    } else if (hours > 0) {
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      return `${hours}h ${minutes}m left`;
+    } else {
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      return `${minutes}m left`;
+    }
+  };
+  
+  // Filter mock auctions for different sections
+  const featuredMockAuctions = mockAuctions.filter(auction => auction.status === 'active').slice(0, 3);
+  const endingSoonMockAuctions = mockAuctions.filter(auction => auction.status === 'ending-soon');
+  
+  // Determine which auctions to show in each section
+  const featuredAuctions = userAuctions.length > 0 
+    ? userAuctions.filter(auction => auction.status === 'active').slice(0, 3)
+    : featuredMockAuctions;
+    
+  const combinedAuctions = [...userAuctions, ...featuredMockAuctions].slice(0, 6);
   
   return (
     <div className="min-h-screen">
@@ -88,8 +169,32 @@ const HomePage = () => {
         </div>
       </section>
       
+      {/* User Auctions Section */}
+      {userAuctions.length > 0 && (
+        <section className="py-16">
+          <div className="container mx-auto px-4">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-3xl font-bold">Latest Auctions</h2>
+              <Link to="/auctions" className="text-auction-blue hover:underline font-medium">View All</Link>
+            </div>
+            
+            {isLoading ? (
+              <div className="py-8 flex justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-auction-blue" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {userAuctions.slice(0, 3).map((auction) => (
+                  <AuctionCard key={auction.id} auction={auction} />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+      
       {/* Featured Auctions */}
-      <section className="py-16">
+      <section className={`py-16 ${userAuctions.length > 0 ? 'bg-gray-50' : ''}`}>
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold">Featured Auctions</h2>
@@ -97,15 +202,15 @@ const HomePage = () => {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredAuctions.map((auction) => (
-              <AuctionCard key={auction.id} auction={auction} />
+            {combinedAuctions.slice(0, 3).map((auction) => (
+              <AuctionCard key={auction.id + (auction.isDemo ? '-demo' : '')} auction={auction} />
             ))}
           </div>
         </div>
       </section>
       
       {/* Ending Soon */}
-      <section className="py-16 bg-gray-50">
+      <section className={`py-16 ${userAuctions.length > 0 && endingSoonMockAuctions.length > 0 ? 'bg-gray-50' : 'bg-white'}`}>
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold">Ending Soon</h2>
@@ -113,7 +218,7 @@ const HomePage = () => {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {endingSoonAuctions.map((auction) => (
+            {endingSoonMockAuctions.map((auction) => (
               <AuctionCard key={auction.id} auction={auction} />
             ))}
           </div>

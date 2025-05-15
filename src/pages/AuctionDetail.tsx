@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { getMockAuctionDetail } from '@/data/mockAuctions';
@@ -10,7 +11,7 @@ import PlaceBid from '@/components/PlaceBid';
 import CountdownTimer from '@/components/CountdownTimer';
 import { toast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, User, AlertCircle } from 'lucide-react';
+import { ChevronLeft, User, AlertCircle, Mail } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 
@@ -18,11 +19,106 @@ type AuctionWithImage = Tables<'auctions'> & {
   auction_images: Tables<'auction_images'>[] | null;
 };
 
+type SellerInfo = {
+  id: string;
+  email?: string;
+  fullName?: string;
+  rating?: number;
+  totalSales?: number;
+  joinedDate: string;
+};
+
+interface BidType {
+  id: string;
+  userId: string;
+  userName: string;
+  amount: number;
+  time: string;
+  isLatest: boolean;
+}
+
 const AuctionDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [auction, setAuction] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sellerInfo, setSellerInfo] = useState<SellerInfo | null>(null);
+  const [bids, setBids] = useState<BidType[]>([]);
+  
+  // Function to fetch real-time bids
+  const fetchBids = async (auctionId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('bids')
+        .select(`
+          id,
+          amount,
+          created_at,
+          user_id,
+          profiles:user_id (
+            full_name
+          )
+        `)
+        .eq('auction_id', auctionId)
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        console.error('Error fetching bids:', error);
+        return;
+      }
+      
+      if (data) {
+        // Transform data to match the BidType interface
+        const transformedBids = data.map((bid, index) => ({
+          id: bid.id,
+          userId: bid.user_id,
+          userName: bid.profiles?.full_name || 'Anonymous Bidder',
+          amount: parseFloat(bid.amount as any), // Convert from numeric to number
+          time: bid.created_at,
+          isLatest: index === 0, // First bid is the latest
+        }));
+        
+        setBids(transformedBids);
+      }
+    } catch (err) {
+      console.error('Error in fetchBids:', err);
+    }
+  };
+  
+  // Fetch seller information
+  const fetchSellerInfo = async (userId: string) => {
+    try {
+      // Get the user's profile information
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
+      if (profileError) {
+        console.error('Error fetching seller profile:', profileError);
+        return;
+      }
+      
+      // Get the user's authentication information (for email)
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
+      
+      if (userError) {
+        console.error('Error fetching seller auth info:', userError);
+      }
+      
+      setSellerInfo({
+        id: userId,
+        email: userData?.user?.email,
+        fullName: profileData?.full_name || "Seller",
+        rating: 4.8, // Default rating for now
+        totalSales: 42, // Default sales count for now
+        joinedDate: profileData?.created_at || "2023-01-01"
+      });
+    } catch (err) {
+      console.error('Error in fetchSellerInfo:', err);
+    }
+  };
   
   useEffect(() => {
     const fetchAuction = async () => {
@@ -86,18 +182,21 @@ const AuctionDetail = () => {
           endTime: data.end_date,
           seller: {
             id: data.user_id,
-            name: "Seller", // We'll improve this later with profile data
-            rating: 4.8,
-            totalSales: 42,
-            joinedDate: "2023-01-01"
+            name: "Loading...", // Will be updated by fetchSellerInfo
           },
-          bids: [], // We'll improve this later with actual bids
           image: data.auction_images && data.auction_images.length > 0 
             ? data.auction_images[0].image_url 
             : '/placeholder.svg',
         };
         
         setAuction(transformedAuction);
+        
+        // Fetch seller information
+        await fetchSellerInfo(data.user_id);
+        
+        // Fetch bids
+        await fetchBids(data.id);
+        
         setLoading(false);
       } catch (err) {
         console.error('Unexpected error:', err);
@@ -107,41 +206,45 @@ const AuctionDetail = () => {
     };
     
     fetchAuction();
+    
+    // Set up real-time subscription for bids
+    if (id && !id.startsWith('mock-')) {
+      const channel = supabase
+        .channel('public:bids')
+        .on('postgres_changes', 
+          { event: 'INSERT', schema: 'public', table: 'bids', filter: `auction_id=eq.${id}` },
+          (payload) => {
+            console.log('New bid received:', payload);
+            // Refresh bids when a new one is added
+            fetchBids(id);
+            
+            // Update current bid in the auction state
+            if (payload.new && payload.new.amount) {
+              setAuction(prev => ({
+                ...prev,
+                currentBid: parseFloat(payload.new.amount as any)
+              }));
+            }
+          }
+        )
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [id]);
   
   const handleBidPlaced = (amount: number) => {
     if (!auction) return;
     
-    // Create a new bid
-    const newBid = {
-      id: `bid-${Date.now()}`,
-      userId: 'current-user',
-      userName: 'You',
-      amount: amount,
-      time: new Date().toISOString(),
-      isLatest: true
-    };
-    
-    // Update all other bids to not be the latest
-    const updatedBids = auction.bids.map((bid: any) => ({
-      ...bid,
-      isLatest: false
-    }));
-    
-    // Add new bid to the list
-    updatedBids.push(newBid);
-    
-    // Sort bids by time (oldest first)
-    updatedBids.sort((a: any, b: any) => 
-      new Date(a.time).getTime() - new Date(b.time).getTime()
-    );
-    
-    // Update auction state
+    // Update the auction state with the new bid amount
     setAuction({
       ...auction,
-      currentBid: amount,
-      bids: updatedBids
+      currentBid: amount
     });
+    
+    // Bids are now fetched automatically through the real-time subscription
   };
   
   const handleAuctionEnded = () => {
@@ -213,20 +316,26 @@ const AuctionDetail = () => {
                     <User className="h-6 w-6 text-auction-blue" />
                   </div>
                   <div>
-                    <h3 className="font-medium">{auction.seller.name}</h3>
-                    <div className="flex items-center text-sm text-muted-foreground">
+                    <h3 className="font-medium">{sellerInfo?.fullName || auction.seller.name}</h3>
+                    {sellerInfo?.email && (
+                      <div className="flex items-center text-sm text-muted-foreground mt-1">
+                        <Mail className="w-4 h-4 mr-1" />
+                        <span>{sellerInfo.email}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center text-sm text-muted-foreground mt-1">
                       <span className="flex items-center mr-3">
                         <svg className="w-4 h-4 text-yellow-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
                         </svg>
-                        {auction.seller.rating} rating
+                        {sellerInfo?.rating || '4.8'} rating
                       </span>
-                      <span>{auction.seller.totalSales} sales</span>
+                      <span>{sellerInfo?.totalSales || '42'} sales</span>
                     </div>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Member since {new Date(auction.seller.joinedDate).toLocaleDateString('en-US', {
+                  Member since {sellerInfo && new Date(sellerInfo.joinedDate).toLocaleDateString('en-US', {
                     month: 'long',
                     year: 'numeric'
                   })}
@@ -270,7 +379,7 @@ const AuctionDetail = () => {
                 ₹{auction.currentBid.toLocaleString()}
               </p>
               <p className="text-sm text-muted-foreground">
-                {auction.bids ? auction.bids.length : 0} bid{auction.bids && auction.bids.length !== 1 ? 's' : ''}
+                {bids ? bids.length : 0} bid{bids && bids.length !== 1 ? 's' : ''}
               </p>
             </div>
             
@@ -299,7 +408,7 @@ const AuctionDetail = () => {
           </div>
           
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <BidHistory bids={auction.bids || []} />
+            <BidHistory bids={bids} />
           </div>
         </div>
       </div>
