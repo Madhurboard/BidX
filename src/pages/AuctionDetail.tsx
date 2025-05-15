@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { getMockAuctionDetail } from '@/data/mockAuctions';
@@ -55,9 +54,7 @@ const AuctionDetail = () => {
           amount,
           created_at,
           user_id,
-          profiles:user_id (
-            full_name
-          )
+          profiles(*)
         `)
         .eq('auction_id', auctionId)
         .order('created_at', { ascending: false });
@@ -69,7 +66,7 @@ const AuctionDetail = () => {
       
       if (data) {
         // Transform data to match the BidType interface
-        const transformedBids = data.map((bid, index) => ({
+        const transformedBids = data.map((bid: any, index: number) => ({
           id: bid.id,
           userId: bid.user_id,
           userName: bid.profiles?.full_name || 'Anonymous Bidder',
